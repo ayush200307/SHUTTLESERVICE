@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Bookings - Shuttle Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2">
+            <i class="fas fa-ticket-alt me-2"></i>
+            Booking Management
+        </h1>
+        <p class="text-muted">Manage passenger bookings and reservations</p>
+    </div>
+    <div class="col-auto">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBookingModal">
+            <i class="fas fa-plus me-2"></i>New Booking
+        </button>
+    </div>
+</div>
+
+<!-- Bookings Table -->
+<div class="card">
+    <div class="card-body">
+        {% if bookings %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>Passenger</th>
+                            <th>Route</th>
+                            <th>Date</th>
+                            <th>Pickup/Dropoff</th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in bookings %}
+                        <tr>
+                            <td><strong>#{{ booking.id }}</strong></td>
+                            <td>{{ booking.passenger_name }}</td>
+                            <td>
+                                <strong>{{ booking.schedule.route.name }}</strong><br>
+                                <small class="text-muted">
+                                    {{ booking.schedule.departure_time.strftime('%H:%M') }} - 
+                                    {{ booking.schedule.arrival_time.strftime('%H:%M') }}
+                                </small>
+                            </td>
+                            <td>{{ booking.booking_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <strong>From:</strong> {{ booking.pickup_stop }}<br>
+                                <strong>To:</strong> {{ booking.dropoff_stop }}
+                            </td>
+                            <td>
+                                {{ booking.passenger_phone }}<br>
+                                <small class="text-muted">{{ booking.passenger_email }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if booking.status.value == 'confirmed' else 'danger' if booking.status.value == 'cancelled' else 'primary' }}">
+                                    {{ booking.status.value.title() }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if booking.status.value == 'confirmed' %}
+                                <form method="POST" action="{{ url_for('cancel_booking', booking_id=booking.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                            onclick="return confirm('Are you sure you want to cancel this booking?')">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-ticket-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No bookings found</h5>
+                <p class="text-muted">Add your first booking to get started.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Booking Modal -->
+<div class="modal fade" id="addBookingModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_booking') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="passenger_name" class="form-label">Passenger Name</label>
+                                <input type="text" class="form-control" id="passenger_name" name="passenger_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="passenger_phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="passenger_phone" name="passenger_phone" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="passenger_email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="passenger_email" name="passenger_email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="schedule_id" class="form-label">Select Schedule</label>
+                        <select class="form-select" id="schedule_id" name="schedule_id" required>
+                            <option value="">Choose a schedule</option>
+                            {% for schedule in schedules %}
+                            <option value="{{ schedule.id }}">
+                                {{ schedule.route.name }} - 
+                                {{ schedule.departure_time.strftime('%H:%M') }} to {{ schedule.arrival_time.strftime('%H:%M') }}
+                                ({{ schedule.vehicle.license_plate }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="pickup_stop" class="form-label">Pickup Stop</label>
+                                <input type="text" class="form-control" id="pickup_stop" name="pickup_stop" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dropoff_stop" class="form-label">Drop-off Stop</label>
+                                <input type="text" class="form-control" id="dropoff_stop" name="dropoff_stop" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="booking_date" class="form-label">Travel Date</label>
+                        <input type="date" class="form-control" id="booking_date" name="booking_date" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    $('#booking_date').attr('min', today);
+    
+    // Auto-populate pickup/dropoff based on selected schedule
+    $('#schedule_id').change(function() {
+        const scheduleId = $(this).val();
+        if (scheduleId) {
+            // In a real application, you might fetch route stops via AJAX
+            // For now, we'll just show placeholder text
+            $('#pickup_stop').attr('placeholder', 'Enter pickup location along the route');
+            $('#dropoff_stop').attr('placeholder', 'Enter dropoff location along the route');
+        }
+    });
+});
+</script>
+{% endblock %}

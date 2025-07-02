@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Vehicles - Shuttle Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2">
+            <i class="fas fa-bus me-2"></i>
+            Vehicle Management
+        </h1>
+        <p class="text-muted">Manage shuttle fleet and vehicle information</p>
+    </div>
+    <div class="col-auto">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
+            <i class="fas fa-plus me-2"></i>Add Vehicle
+        </button>
+    </div>
+</div>
+
+<!-- Vehicles Table -->
+<div class="card">
+    <div class="card-body">
+        {% if vehicles %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>License Plate</th>
+                            <th>Model</th>
+                            <th>Capacity</th>
+                            <th>Year</th>
+                            <th>Status</th>
+                            <th>Last Maintenance</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vehicle in vehicles %}
+                        <tr>
+                            <td><strong>{{ vehicle.license_plate }}</strong></td>
+                            <td>{{ vehicle.model }}</td>
+                            <td>{{ vehicle.capacity }} passengers</td>
+                            <td>{{ vehicle.year }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if vehicle.status.value == 'active' else 'warning' if vehicle.status.value == 'maintenance' else 'danger' }}">
+                                    {{ vehicle.status.value.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td>{{ vehicle.last_maintenance.strftime('%Y-%m-%d') if vehicle.last_maintenance else 'N/A' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary edit-vehicle" 
+                                        data-vehicle-id="{{ vehicle.id }}"
+                                        data-license-plate="{{ vehicle.license_plate }}"
+                                        data-model="{{ vehicle.model }}"
+                                        data-capacity="{{ vehicle.capacity }}"
+                                        data-year="{{ vehicle.year }}"
+                                        data-status="{{ vehicle.status.value }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-bus fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No vehicles found</h5>
+                <p class="text-muted">Add your first vehicle to get started.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Vehicle Modal -->
+<div class="modal fade" id="addVehicleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Vehicle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_vehicle') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="license_plate" class="form-label">License Plate</label>
+                        <input type="text" class="form-control" id="license_plate" name="license_plate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="model" class="form-label">Model</label>
+                        <input type="text" class="form-control" id="model" name="model" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="capacity" class="form-label">Capacity</label>
+                                <input type="number" class="form-control" id="capacity" name="capacity" min="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="year" class="form-label">Year</label>
+                                <input type="number" class="form-control" id="year" name="year" min="1900" max="2025" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Vehicle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Vehicle Modal -->
+<div class="modal fade" id="editVehicleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Vehicle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editVehicleForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_license_plate" class="form-label">License Plate</label>
+                        <input type="text" class="form-control" id="edit_license_plate" name="license_plate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_model" class="form-label">Model</label>
+                        <input type="text" class="form-control" id="edit_model" name="model" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_capacity" class="form-label">Capacity</label>
+                                <input type="number" class="form-control" id="edit_capacity" name="capacity" min="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_year" class="form-label">Year</label>
+                                <input type="number" class="form-control" id="edit_year" name="year" min="1900" max="2025" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_status" class="form-label">Status</label>
+                        <select class="form-select" id="edit_status" name="status" required>
+                            <option value="active">Active</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="out_of_service">Out of Service</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Vehicle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('.edit-vehicle').click(function() {
+        const vehicleId = $(this).data('vehicle-id');
+        const licensePlate = $(this).data('license-plate');
+        const model = $(this).data('model');
+        const capacity = $(this).data('capacity');
+        const year = $(this).data('year');
+        const status = $(this).data('status');
+        
+        $('#edit_license_plate').val(licensePlate);
+        $('#edit_model').val(model);
+        $('#edit_capacity').val(capacity);
+        $('#edit_year').val(year);
+        $('#edit_status').val(status);
+        
+        $('#editVehicleForm').attr('action', `/vehicles/edit/${vehicleId}`);
+        $('#editVehicleModal').modal('show');
+    });
+});
+</script>
+{% endblock %}
